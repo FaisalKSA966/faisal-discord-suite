@@ -1,0 +1,24 @@
+{
+  "name": "faisal-discord-suite",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Discord suite for Faisal: 24/7 voice, region auto-switch, audio recording with visualizer, XO game, soundboard, VIP, and an optional companion screen-capture app.",
+  "workspaces": [
+    "bot",
+    "companion"
+  ],
+  "scripts": {
+    "bot": "npm run -w bot dev",
+    "bot:start": "npm run -w bot start",
+    "bot:build": "npm run -w bot build",
+    "bot:deploy-commands": "npm run -w bot deploy-commands",
+    "companion": "npm run -w companion start",
+    "build": "npm run -w bot build",
+    "lint": "npm run -w bot lint",
+    "typecheck": "npm run -w bot typecheck"
+  },
+  "engines": {
+    "node": ">=20.10.0"
+  },
+  "license": "MIT"
+}
