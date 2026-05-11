@@ -8,6 +8,10 @@ import { pointsCommand } from "./points.js";
 import { soundboardCommand } from "./soundboard.js";
 import { vipCommand } from "./vip.js";
 import { helpCommand } from "./help.js";
+import { accountCommand } from "./account.js";
+import { voiceCommand } from "./voice.js";
+import { shareCommand } from "./share.js";
+import { cameraCommand } from "./camera.js";
 
 export async function registerAllCommands(client: Client): Promise<void> {
   const all = [
@@ -18,6 +22,10 @@ export async function registerAllCommands(client: Client): Promise<void> {
     pointsCommand,
     soundboardCommand,
     vipCommand,
+    accountCommand,
+    voiceCommand,
+    shareCommand,
+    cameraCommand,
     helpCommand,
   ];
   for (const cmd of all) {

@@ -5,7 +5,9 @@
 سويت بوت ديسكورد متكاملة ببرمجة عربية واضحة، تجمع كل شي طلبته:
 
 - **بوت رسمي (Bot)** يثبت في الروم 24/7، يبدّل الـ Voice Region تلقائياً لما يصير أحمر، يسجل الصوت بفيديو visualizer احترافي مع شات الروم وحالة الكاميرا/الشير، يدير ساوندبورد، XO بكانفاس Liquid Glass، أوامر VIP وإعدادات كاملة.
-- **Companion App اختياري** يشتغل على VPS لتصوير الشاشة فعلياً (يحتاج حساب ديسكورد ثاني — مخاطرة بان الحساب موجودة، اقرأ [docs/COMPANION.md](docs/COMPANION.md)).
+- **Companion App اختياري لـ Windows 10** يدير حساب User عادي (تغيير الاسم/الأفتار/الستاتس/الـ Bio + دخول روم + سكرين شير + كاميرا + تسجيل سطح المكتب). يحتاج حساب ديسكورد احتياطي — مخالف لـ ToS مع مخاطرة بان، اقرأ [docs/COMPANION.md](docs/COMPANION.md).
+
+> 🪟 **النظام مجهّز لـ Windows 10 كأولوية** (PowerShell + NSSM + ffmpeg gdigrab/dshow). يدعم Linux/macOS أيضاً تلقائياً.
 
 ## مميزات سريعة
 
@@ -17,27 +19,34 @@
 | 🎮 **XO** | لعبة XO بكانفاس بهوية فاتحة (Liquid Glass)، انضمام بأزرار، جولات متعددة (افتراضي 3)، نقاط محفوظة، Leaderboard. |
 | 🔊 **Soundboard** | سجّل صوت شخص (≤5ث) بأمر، عاينه، أعطه اسم وإيموجي، يضاف للسيرفر مباشرة عبر Soundboard API. |
 | 👑 **VIP** | تغيير صورة/اسم/بنر البوت بأوامر مخصصة. |
+| 👤 **/account** | تحكم بحساب الـ companion: name, display-name, bio, avatar, banner, presence, custom-status. |
+| 🎥 **/voice + /share + /camera** | دخول/خروج روم، كتم، سكرين شير، كاميرا — كلها من حساب الـ companion. |
 | ⚙️ **/setup** | لوحة إعدادات Components v2 كاملة (Channel Select، String Select، Buttons، Modals). |
-| 📹 **Companion (اختياري)** | تصوير شاشة فعلي عبر Playwright + FFmpeg + Xvfb. |
+| 📹 **Companion (اختياري)** | Playwright + ffmpeg `gdigrab`/`dshow` لتسجيل سطح المكتب على Windows. |
 
-## بدء سريع
+## بدء سريع — Windows 10 (PowerShell)
 
-```bash
+```powershell
 git clone https://github.com/FaisalKSA966/faisal-discord-suite
 cd faisal-discord-suite
 
 # 1) نسخ ملفات البيئة
-cp bot/.env.example bot/.env
-# املأ DISCORD_TOKEN و DISCORD_APP_ID و DEFAULT_GUILD_ID
+Copy-Item bot\.env.example bot\.env
+notepad bot\.env       # املأ DISCORD_TOKEN, DISCORD_APP_ID, DEFAULT_GUILD_ID, OWNER_ID
 
 # 2) تثبيت الاعتمادات
 npm install
 
-# 3) تشغيل البوت (dev)
-npm run bot
+# 3) تشغيل البوت
+npm run bot           # dev
+# أو:  npm run bot:build  ;  npm run bot:start  (إنتاج)
 ```
 
 التفاصيل الكاملة مع الـ Intents و Permissions وكل خطوة: **[docs/SETUP.md](docs/SETUP.md)**.
+
+للتشغيل الدائم كخدمة Windows: **[docs/WINDOWS.md](docs/WINDOWS.md)** (NSSM).
+
+للـ companion (تحكم بحساب User + سكرين شير): **[docs/COMPANION.md](docs/COMPANION.md)**.
 
 ## بنية المشروع
 
@@ -69,8 +78,9 @@ faisal-discord-suite/
 ## القيود المعروفة
 
 - بوتات ديسكورد الرسمية **ما تستقبل ستريم فيديو** من المستخدمين — لذلك الـ visualizer يصور الأيقونات والأسماء فقط. للتصوير الفعلي استخدم [Companion App](docs/COMPANION.md) (مع تحذير الـ ban).
-- حد رفع الفيديو في ديسكورد 25MB افتراضياً، 50MB لـ Boost L2، 100MB لـ L3. الفيديوهات الأطول من 20 دقيقة بجودة medium قد تتجاوز الحد — البوت يحفظ المسار محلياً لتنزله يدوياً.
+- حد رفع الفيديو في ديسكورد 25MB افتراضياً، 50MB لـ Boost L2، 100MB لـ L3. الفيديوهات الأطول من 20 دقيقة بجودة medium قد تتجاوز الحد — البوت يحفظ المسار محلياً لتنزله يدوياً (80 قيقا = 100+ ساعة تسجيل).
 - Soundboard API يحتاج صلاحية `Manage Guild Expressions` للبوت.
+- الـ companion يستخدم حساب user عادي عبر متصفح آلي = **مخالف ToS**. الحساب يتحظر تلقائياً في مرحلة معينة (أسابيع-أشهر). استخدم حساب احتياطي مخصص.
 
 ## رخصة
 MIT

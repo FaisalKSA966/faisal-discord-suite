@@ -1,8 +1,14 @@
 <div dir="rtl">
 
-# دليل الإعداد الكامل — Faisal Discord Suite
+# دليل الإعداد الكامل — Faisal Discord Suite (Windows 10)
 
-هذا الدليل يشرح من الصفر كيف تشغّل البوت على سيرفرك الديسكورد، خطوة خطوة.
+هذا الدليل يشرح من الصفر كيف تشغّل البوت + الـ companion على ويندوز 10، خطوة بخطوة. كل الأوامر بـ **PowerShell** (افتح Start → اكتب `powershell` → اضغط Enter).
+
+> 📦 الـ workspace فيه قسمين:
+> - **bot/** — البوت الرسمي (آمن، يشتغل دائماً).
+> - **companion/** — تطبيق تحكم بحساب user عادي (لتغيير الاسم/الأفتار + تسجيل الشاشة الفعلي). اختياري.
+
+---
 
 ## 1) إنشاء تطبيق البوت في Discord Developer Portal
 
@@ -13,166 +19,158 @@
      - `Presence Intent`
      - `Server Members Intent`
      - `Message Content Intent`
-   - اضغط **Reset Token** ثم انسخ التوكن — احفظه بمكان آمن، راح نحتاجه.
+   - اضغط **Reset Token** ثم انسخ التوكن — احفظه بمكان آمن.
 4. روح لتبويب **General Information** وانسخ:
-   - `Application ID` → سيكون `DISCORD_APP_ID` في الـ .env
+   - `Application ID` → سيكون `DISCORD_APP_ID` في الـ `.env`.
 
 ## 2) دعوة البوت لسيرفرك
 
 1. روح لتبويب **OAuth2 → URL Generator**.
-2. اختر الـ Scopes التالية: `bot`, `applications.commands`.
-3. اختر الـ Permissions التالية للبوت:
-   - **General:** View Channels, Manage Channels (لتبديل الـ Region), Manage Threads, Send Messages, Send Messages in Threads, Create Private Threads, Embed Links, Attach Files, Read Message History
-   - **Voice:** Connect, Speak, Use Voice Activity, Priority Speaker (اختياري)
-   - **Manage Server Expressions** (للساوندبورد)
-4. انسخ الرابط أسفل الصفحة، افتحه، واختر سيرفرك وادعُ البوت.
+2. **Scopes:** `bot` و `applications.commands`.
+3. **Bot Permissions:**
+   - **General:** View Channels, Manage Channels (لتبديل الـ Region), Manage Threads, Send Messages, Send Messages in Threads, Create Private Threads, Embed Links, Attach Files, Read Message History.
+   - **Voice:** Connect, Speak, Use Voice Activity, Priority Speaker (اختياري).
+   - **Manage Server Expressions** (للساوندبورد).
+4. انسخ الرابط، افتحه، واختر سيرفرك.
 
-> **نصيحة:** أعطِ البوت رول مرتب فوق غالبية الرولات حتى يقدر يتحرك ويفعل صلاحياته بدون مشاكل.
+> أعطِ رتبة البوت ترتيب عالي عشان ما تجيك مشاكل صلاحيات.
 
-## 3) تجهيز جهازك / السيرفر
+## 3) تجهيز جهاز Windows 10
 
-البوت يحتاج Node.js 20+ و FFmpeg (مشمول كـ `ffmpeg-static`).
+### ثبّت الأدوات الأساسية
+شغّل PowerShell كـ **Administrator** ولصق الأوامر التالية واحد واحد:
 
-### على Linux (Ubuntu/Debian)
-```bash
-# Node 20
-curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
-sudo apt-get install -y nodejs build-essential python3 pkg-config
+```powershell
+# (اختياري - الأسهل) ثبّت winget لو ما عندك
+# يجي مع ويندوز 10/11 الحديث. لو ما اشتغل: https://aka.ms/getwinget
 
-# مكتبات صوت
-sudo apt-get install -y libsodium-dev
-
-# خطوط عربية (مهم للـ Canvas/Visualizer)
-sudo apt-get install -y fonts-noto-core fonts-dejavu
+winget install -e --id OpenJS.NodeJS.LTS
+winget install -e --id Git.Git
+winget install -e --id Gyan.FFmpeg
+winget install -e --id Microsoft.VisualStudio.2022.BuildTools --override "--wait --add Microsoft.VisualStudio.Workload.VCTools --includeRecommended"
 ```
 
-### على Windows
-- ثبّت Node.js 20+ من https://nodejs.org
-- ثبّت Git Bash أو WSL2
-- ثبّت Visual Studio Build Tools (لمكتبات native)
+> **بدون winget:**
+> - Node 20 LTS: https://nodejs.org/en/download
+> - Git: https://git-scm.com/download/win
+> - FFmpeg: https://www.gyan.dev/ffmpeg/builds/ (ffmpeg-release-essentials.zip) ثم فك الضغط في `C:\ffmpeg` وأضف `C:\ffmpeg\bin` إلى متغير البيئة PATH.
+> - Visual Studio Build Tools (للـ `better-sqlite3` و `@napi-rs/canvas`): https://visualstudio.microsoft.com/visual-cpp-build-tools/
 
-### على macOS
-```bash
-brew install node@20 pkg-config
+أعد تشغيل PowerShell بعد التثبيت، وتأكد:
+
+```powershell
+node --version    # v20.x
+npm --version
+git --version
+ffmpeg -version
 ```
 
-## 4) نسخ المشروع وتثبيت الاعتمادات
+## 4) جلب المشروع
 
-```bash
-git clone https://github.com/FaisalKSA966/faisal-discord-suite
+```powershell
+cd $HOME
+git clone https://github.com/FaisalKSA966/faisal-discord-suite.git
 cd faisal-discord-suite
 npm install
 ```
 
+> أول `npm install` قد ياخذ 3-5 دقايق لأنه يبني `better-sqlite3` و `@napi-rs/canvas` محلياً.
+
 ## 5) ضبط متغيرات البيئة
 
-```bash
-cp bot/.env.example bot/.env
+```powershell
+Copy-Item bot\.env.example bot\.env
+notepad bot\.env
 ```
 
-افتح `bot/.env` بمحرر نصوص وعبّ:
+في `bot\.env` عبّ:
 
 | المتغير | ماذا تكتب |
 |---|---|
 | `DISCORD_TOKEN` | التوكن من خطوة 1 |
 | `DISCORD_APP_ID` | الـ Application ID |
-| `DEFAULT_GUILD_ID` | معرّف سيرفرك (Developer Mode → كليك يمين على السيرفر → Copy ID). اتركها فاضي للأوامر العامة (تأخذ ساعة). |
-| `OWNER_ID` | معرّف حسابك (لتفعيل /vip) |
-| `LOG_LEVEL` | `info` افتراضي، استخدم `debug` للتطوير |
+| `DEFAULT_GUILD_ID` | معرّف سيرفرك (Developer Mode → كليك يمين على السيرفر → Copy ID) |
+| `OWNER_ID` | معرّف حسابك (مهم — للأوامر VIP / account / share / camera) |
+| `LOG_LEVEL` | `info` افتراضي |
+| `COMPANION_WS_URL` | اتركها فاضي الآن — نعبّيها لاحقاً |
+| `COMPANION_AUTH_TOKEN` | اتركها فاضي |
+
+احفظ وأغلق Notepad.
 
 ## 6) تشغيل البوت
 
-```bash
-# تطوير
+### تطوير (مع reload تلقائي)
+```powershell
 npm run bot
+```
 
-# إنتاج (build + start)
+### إنتاج
+```powershell
 npm run bot:build
 npm run bot:start
 ```
 
-أول مرة، الأوامر تنتشر تلقائياً للسيرفر المحدد في `DEFAULT_GUILD_ID`. لو ما ظهرت:
-```bash
+أول مرة، الأوامر تنتشر تلقائياً للسيرفر المحدد. لو ما طلعت:
+```powershell
 npm run bot:deploy-commands
 ```
 
 ## 7) إعداد السيرفر من داخل ديسكورد
 
-افتح ديسكورد، اكتب في أي قناة `/setup` — راح تطلع لوحة كاملة:
+افتح ديسكورد، اكتب في أي قناة `/setup`:
 
-1. **قناة لوحة التسجيل** → اختر قناة نصية يصير فيها الـ Private Threads للفيديوهات.
-2. **روم التثبيت 24/7** → اختر الروم الصوتي اللي البوت يثبت فيه (مثلاً 1450924794164936744).
-3. **Region الافتراضي** → اختر `automatic` أو حدد منطقة معينة.
-4. **المدة الافتراضية للـ Clip** → 5 / 10 / 30 دقيقة.
-5. **Auto-Pin** → مفعّل = البوت يعيد الاتصال تلقائياً لو طلع.
-6. **Auto-Region** → مفعّل = البوت يبدّل الـ Region تلقائياً لما يحس فيه مشاكل.
+1. **قناة لوحة التسجيل** → قناة نصية تستضيف الـ private threads.
+2. **روم التثبيت 24/7** → الروم الصوتي للتثبيت (مثلاً 1450924794164936744).
+3. **Region الافتراضي** → `automatic` أو منطقة محددة.
+4. **المدة الافتراضية للـ Clip** → 5/10/30 دقيقة.
+5. **Auto-Pin** → مفعّل = يرجع تلقائياً لو فُصل.
+6. **Auto-Region** → مفعّل = يبدّل الـ region لو حس بمشاكل.
 
-## 8) استخدام البوت
+## 8) الأوامر الرئيسية
 
 | الأمر | الوظيفة |
 |---|---|
-| `/record panel` | ينشر لوحة التحكم في القناة الحالية (يفضل تنشرها في القناة المحددة من /setup) |
-| `/record start` | يبدأ التسجيل في الروم اللي أنت فيه أو روم التثبيت |
-| `/record stop` | يوقف ويرسل الفيديو في ثريد |
-| `/clip [minutes]` | يحفظ آخر X دقيقة كـ Clip |
-| `/xo [rounds]` | يفتح لوبي XO |
-| `/points` | يعرض نقاطك |
-| `/points leaderboard:true` | المتصدّرون |
-| `/soundboard record user:@x` | يسجّل صوت شخص (≤5ث) |
-| `/soundboard stop` | يوقف ويعرض المعاينة |
-| `/vip avatar change` | يغيّر صورة البوت (للمالك فقط) |
-| `/vip name change value:Name` | يغيّر اسم البوت |
-| `/vip banner change` | يغيّر بنر البوت |
+| `/setup` | لوحة الإعدادات الكاملة |
+| `/record panel` | ينشر لوحة تحكم بدء/إيقاف التسجيل |
+| `/record start` / `/record stop` | تحكم سريع |
+| `/clip [minutes]` | يحفظ آخر X دقيقة |
+| `/xo [rounds]` | لعبة XO |
+| `/points` / `/points leaderboard:true` | النقاط |
+| `/soundboard record user:@x` / `/soundboard stop` | ساوندبورد |
+| `/vip avatar / name / banner change` | تغيير صورة/اسم/بنر **البوت** (للمالك) |
+| `/account ...` | تغيير اسم/أفتار/ستاتس **حساب الـ companion** (يحتاج التطبيق) |
+| `/voice join|leave|mute` | تحكم بالـ companion في الروم |
+| `/share start|stop|record-start|record-stop|status` | سكرين شير + تسجيل |
+| `/camera on|off` | كاميرا الـ companion |
 | `/help` | كل الأوامر |
 
-## 9) تشغيل دائم (Systemd) — Linux
+## 9) تشغيل دائم على ويندوز (NSSM)
 
-أنشئ `/etc/systemd/system/faisal-bot.service`:
+شوف [WINDOWS.md](./WINDOWS.md) لإعداد البوت كـ Windows Service يشتغل تلقائياً مع نظام التشغيل ويعيد التشغيل تلقائياً لو وقف.
 
-```ini
-[Unit]
-Description=Faisal Discord Suite Bot
-After=network.target
+## 10) (اختياري) تشغيل الـ Companion للتحكم بحساب User
 
-[Service]
-Type=simple
-User=ubuntu
-WorkingDirectory=/home/ubuntu/faisal-discord-suite
-ExecStart=/usr/bin/npm run bot:start --silent
-Restart=always
-RestartSec=10
-Environment=NODE_ENV=production
+لو تبي تتحكم بحساب user (تغيير الاسم/الأفتار/الستاتس + تسجيل سكرين شير فعلي)، اتبع [COMPANION.md](./COMPANION.md).
 
-[Install]
-WantedBy=multi-user.target
-```
+## 11) مشاكل شائعة
 
-ثم:
-```bash
-sudo systemctl daemon-reload
-sudo systemctl enable --now faisal-bot
-sudo journalctl -fu faisal-bot
-```
+### `gyp ERR! find VS` عند `npm install`
+- ما عندك Visual Studio Build Tools. ارجع لخطوة 3 وثبّتها (Workload: **Desktop development with C++**).
+- بعد التثبيت: `npm config set msvs_version 2022` ثم أعد `npm install`.
 
-## 10) مشاكل شائعة
+### `Cannot find module 'better-sqlite3'`
+- نفس السبب أعلاه. الـ native build فشل.
 
-### "Missing Access" لما يحاول البوت يثبت في الروم
-- تأكد إن للبوت صلاحية `Connect` و `View Channel` على ذلك الروم.
-- لو الروم محدود برولات معينة، أضف رول البوت لقائمة المسموحين.
+### `Missing Access` لما يحاول البوت يثبت في الروم
+- أعطه `Connect` و `View Channel` على ذلك الروم تحديداً.
 
 ### الـ Region ما يتبدل تلقائياً
-- تأكد من صلاحية `Manage Channels` للبوت.
-- جرّب اللوحة `/setup` → `Auto-Region: مفعّل`.
+- يحتاج `Manage Channels`. + فعّل `Auto-Region` من `/setup`.
 
 ### الفيديو حجمه كبير وما يرفع
-- البوت يحفظ المسار في الثريد. تقدر تنزله من السيرفر، أو ترفعه على Catbox/Drive وترسل الرابط.
-- بدّل `RENDER_QUALITY` لـ `low` في `.env` لتوفير المساحة.
+- الملف يظل محفوظ محلياً في `bot/data/recordings/`. تقدر تنزله، أو ترفعه على Catbox/Google Drive وترسل الرابط في الثريد.
 
-### Soundboard ما ينضاف
-- تأكد من صلاحية `Manage Guild Expressions`.
-- السيرفر له حد ساوندبوردات بحسب مستوى البوست (عادي = 8، Lvl1 = 24، Lvl2 = 36، Lvl3 = 48). تأكد ما وصلت الحد.
-
-### "Privileged Intents not enabled"
-- روح لتبويب Bot في Developer Portal وفعّل الـ 3 Intents.
+### التسجيل ما يشتغل
+- شوف `bot/logs/` أو الـ console. أكثر سبب شائع: ما فيه أحد يتكلم في الروم لما بدأت — البوت يبدأ يجمع الصوت فقط لما يحس صوت من أي شخص.
 
 </div>

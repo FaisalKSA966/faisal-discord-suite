@@ -1,139 +1,154 @@
 <div dir="rtl">
 
-# Companion App — تصوير الشاشة الفعلي
+# Companion App — Windows 10 (تحكم بحساب User + تسجيل سكرين شير)
 
-> ⚠️ **تحذير صريح:** هذا التطبيق يستخدم حساب ديسكورد عادي (User Account) عبر Playwright، وهو ضد شروط استخدام ديسكورد. الحساب راح يتحظر في النهاية (أسابيع أو أشهر). استخدم **حساب احتياطي مخصص فقط لهذا الغرض**.
+> ⚠️ **تحذير صريح:** يستخدم حساب ديسكورد عادي عبر متصفح آلي (Playwright). هذا **مخالف لـ ToS ديسكورد** والحساب راح يتحظر في النهاية. استخدم **حساب احتياطي مخصص**.
 
-## متى تحتاج هذا التطبيق؟
+## وش يقدر يسوي؟
 
-لو الـ visualizer من البوت الرسمي ما يكفيك وتبي تصور:
-- محتوى الشاشة الفعلي لما أحد يشير
-- محتوى الكاميرا
-- التفاعلات البصرية الكاملة
+- ✅ تغيير اسم الحساب (Username + Display Name)
+- ✅ تغيير الأفتار، البانر، الـ Bio
+- ✅ تغيير حالة التواجد (Online/DND/Idle/Invisible)
+- ✅ Custom Status (نص + إيموجي)
+- ✅ دخول/خروج روم صوتي
+- ✅ كتم / فك الكتم
+- ✅ تشغيل/إيقاف الكاميرا
+- ✅ بدء/إيقاف سكرين شير
+- ✅ تسجيل سطح المكتب فعلياً (ffmpeg + gdigrab)
+
+كل هذي الأوامر تستدعى من البوت عبر `/account`, `/voice`, `/share`, `/camera`.
 
 ## المتطلبات
 
-- VPS Linux (Ubuntu 22.04 موصى به)
-- 2 CPU، 4GB RAM على الأقل
-- Xvfb (شاشة افتراضية)
-- PulseAudio
-- FFmpeg
-- Playwright Chromium
+- جهاز Windows 10/11 مسجّل دخول لحسابك (الـ companion يحتاج desktop session حقيقي).
+- نفس متطلبات SETUP.md (Node 20, Git, FFmpeg, Build Tools).
+- حساب ديسكورد ثاني (اعتبره حساب "للحرق").
 
-## التثبيت
+> 💡 **80 قيقا تكفي:** تسجيل ساعة بـ 720p@15fps + صوت 128kbps يطلع ~600MB. تقدر تخزّن 100+ ساعة.
 
-### 1) ثبّت الاعتمادات
+## 1) ثبّت Chromium للـ Playwright
 
-```bash
-sudo apt-get update
-sudo apt-get install -y \
-  xvfb pulseaudio dbus-x11 \
-  ffmpeg \
-  fonts-noto-core fonts-noto-color-emoji fonts-dejavu \
-  libnss3 libatk1.0-0 libatk-bridge2.0-0 libxss1 \
-  libasound2 libxshmfence1 libgbm1 libgtk-3-0
-```
-
-### 2) ثبّت Chromium المتوافق مع Playwright
-
-```bash
-cd faisal-discord-suite
+```powershell
+cd $HOME\faisal-discord-suite
 npx playwright install chromium
 ```
 
-### 3) تجهيز Xvfb و PulseAudio
+## 2) (مهم) جهّز جهاز صوت قابل للتسجيل
 
-```bash
-# ابدأ Xvfb على display 99
-Xvfb :99 -screen 0 1280x720x24 &
-export DISPLAY=:99
+ويندوز افتراضياً ما يخلّيك تسجل الصوت اللي يطلع من السماعات. عندك خيارين:
 
-# ابدأ PulseAudio (إذا ما كان شغّال)
-pulseaudio --start --exit-idle-time=-1 &
+### أ — تفعيل "Stereo Mix" (أسرع، مجاني)
+1. كليك يمين على أيقونة الصوت → Sounds → Recording tab.
+2. كليك يمين على الفراغ → Show Disabled Devices.
+3. لو ظهر "Stereo Mix" → كليك يمين → Enable → Set as Default Device.
+4. لو ما ظهر، فاكتشف drivers الصوت ما تدعمه — استخدم الخيار ب.
+
+### ب — VB-Audio Virtual Cable (يشتغل دايماً)
+1. حمّل من https://vb-audio.com/Cable/
+2. ثبّت كـ Administrator وأعد التشغيل.
+3. كليك يمين على أيقونة الصوت → Open Sound Settings → App Volume and Device Preferences.
+4. اختر التطبيق اللي تبي تسجل صوته (Chrome للـ companion) → Output: `CABLE Input`.
+5. الأمر اللي يطلع منه الصوت لاحقاً يكون: `audio=CABLE Output (VB-Audio Virtual Cable)`.
+
+### معرفة اسم الجهاز بالضبط
+```powershell
+ffmpeg -list_devices true -f dshow -i dummy 2>&1 | Select-String "DirectShow audio"
+```
+انسخ السطر اللي يبدأ بـ `"..."` (بين علامتي تنصيص) — هذا اسم الجهاز.
+
+## 3) عبّ ملف البيئة
+
+```powershell
+cd $HOME\faisal-discord-suite
+Copy-Item companion\.env.example companion\.env
+notepad companion\.env
 ```
 
-### 4) إعداد متغيرات البيئة
+عبّ المطلوب:
 
-```bash
-cp companion/.env.example companion/.env
+| المتغير | القيمة |
+|---|---|
+| `DISCORD_USER_TOKEN` | راجع القسم 4 أدناه |
+| `ACCOUNT_PASSWORD` | كلمة سر حساب الـ companion (لتغيير الـ Username) — اختياري |
+| `TARGET_GUILD_ID` | معرّف سيرفرك |
+| `TARGET_VOICE_CHANNEL_ID` | الروم الصوتي |
+| `BOT_AUTH_TOKEN` | اختر نص عشوائي طويل (نفسه في `bot\.env`) |
+| `WINDOWS_AUDIO_DEVICE` | اسم جهاز الصوت من القسم 2 (مع علامات التنصيص) |
+| `FFMPEG_PATH` | فاضي لو ffmpeg في PATH، أو مسار `ffmpeg.exe` كامل |
+
+## 4) استخراج توكن حساب user (بحذر)
+
+⚠️ هذا التوكن يعطي **صلاحية كاملة على الحساب**. ما تنشره أبداً.
+
+1. سجّل دخول للحساب الاحتياطي في https://discord.com.
+2. اضغط F12 → روح لتبويب **Network**.
+3. في فلتر Filter اكتب: `users/@me`.
+4. اضغط أي صفحة في ديسكورد (مثلاً Friends).
+5. اضغط على أي طلب لـ `/users/@me` → في Headers → ابحث عن `authorization`.
+6. انسخ القيمة (بدون علامات تنصيص) → الصقها في `companion\.env` → `DISCORD_USER_TOKEN=`.
+
+> **بدائل:** هناك سكربتات Console لاستخراج التوكن، لكن ديسكورد يحظر الإلصاق في Console منذ 2023. الطريقة أعلاه الأضمن.
+
+## 5) أكمل `bot\.env` للاتصال بالـ companion
+
+```powershell
+notepad $HOME\faisal-discord-suite\bot\.env
 ```
 
 عبّ:
-- `DISCORD_USER_TOKEN` → التوكن من حساب الـ companion (راجع أدناه)
-- `TARGET_GUILD_ID` → معرّف سيرفرك
-- `TARGET_VOICE_CHANNEL_ID` → الروم الصوتي
-- `BOT_AUTH_TOKEN` → نفس القيمة اللي تحطها في `bot/.env` → `COMPANION_AUTH_TOKEN`
-
-### 5) استخراج توكن حساب مستخدم
-
-⚠️ بحذر شديد. استخدم حساب احتياطي.
-
-1. سجّل دخول للحساب الاحتياطي في ديسكورد ويب (https://discord.com).
-2. افتح DevTools (F12) → تبويب Console.
-3. ألصق هذا الكود:
-
-```js
-webpackChunkdiscord_app.push([[Math.random()],{},r=>{for(let e in r.c)try{for(let t in r.c[e].exports)if(r.c[e].exports[t]&&r.c[e].exports[t].getToken)return console.log(r.c[e].exports[t].getToken())}catch(e){}}])
+```
+COMPANION_WS_URL=ws://localhost:8788
+COMPANION_AUTH_TOKEN=نفس-القيمة-في-companion-env
 ```
 
-4. التوكن راح يطلع في الـ Console. انسخه بدون علامات تنصيص.
+> لو الـ companion على جهاز ثاني، استبدل `localhost` بـ IP الجهاز وافتح المنفذ 8788 في Firewall.
 
-### 6) تشغيل الـ Companion
+## 6) شغّل الـ Companion
 
-```bash
-cd faisal-discord-suite
-npm run companion:build 2>/dev/null || npx tsc -p companion
-node companion/dist/index.js
-# أو للتطوير:
+### تطوير
+```powershell
 npm run -w companion dev
 ```
 
-## كيف يتواصل مع البوت؟
-
-- الـ Companion يفتح WebSocket على `LISTEN_PORT` (افتراضي 8788) ينتظر فيه أوامر من البوت.
-- البوت لما يطلب "ابدأ تصوير الشاشة" يرسل `{type: "start", authToken, label}` ويبدأ الـ companion يصور.
-- لما البوت يطلب "أوقف" يجمع الـ companion ملف MP4 ويرسل المسار.
-
-> ملاحظة: في الإصدار الحالي، التكامل المباشر بين البوت والـ companion ما زال idle — يعني الـ companion يصور لما تطلب منه يدوياً عبر `wscat`. لتفعيل التكامل الكامل، عدّل `bot/src/modules/recorder/router.ts` ليرسل أمر `start`/`stop` للـ companion عند بدء/إيقاف التسجيل، وقم بدمج الفيديو الناتج من الـ companion مع الصوت من البوت في FFmpeg pass ثاني.
-
-## تشغيل دائم على VPS (Systemd)
-
-أنشئ `/etc/systemd/system/faisal-companion.service`:
-
-```ini
-[Unit]
-Description=Faisal Companion (screen capture)
-After=network.target
-
-[Service]
-Type=simple
-User=ubuntu
-WorkingDirectory=/home/ubuntu/faisal-discord-suite
-Environment=DISPLAY=:99
-Environment=NODE_ENV=production
-ExecStartPre=/usr/bin/Xvfb :99 -screen 0 1280x720x24
-ExecStartPre=/bin/sh -c "pulseaudio --start --exit-idle-time=-1"
-ExecStart=/usr/bin/node companion/dist/index.js
-Restart=always
-RestartSec=15
-
-[Install]
-WantedBy=multi-user.target
+### إنتاج
+```powershell
+npm run -w companion build
+node companion\dist\index.js
 ```
+
+أول تشغيل:
+- يفتح Chromium بحجم 1280×720.
+- يحقن التوكن في localStorage.
+- يدخل تلقائياً على /channels/{guild}/{voice_channel}.
+- لو `AUTO_JOIN_VOICE=true` يحاول دبل كليك على الروم (قد يحتاج تأكيد من المستخدم في أول مرة).
+
+### للتشغيل الدائم
+راجع [WINDOWS.md](./WINDOWS.md) قسم 4 لتركيبه كـ Windows Service.
+
+## 7) جرّب من البوت
+
+في ديسكورد، اكتب:
+- `/account status` → يطلع `ok: true` ومعلومات `/me`.
+- `/account presence value:dnd` → الحساب يصير "مشغول".
+- `/voice join` → الحساب يدخل الروم.
+- `/share start` → سكرين شير + تسجيل محلي.
+- `/share stop` → ينقطع الشير، ملف MP4 يحفظ في `companion\out\`.
 
 ## نصائح لتقليل خطر الحظر
 
-- **لا تستخدم الحساب لشي ثاني** — لا تكتب رسائل، لا تتفاعل، لا تنضم لسيرفرات. خله "يدخل-يصور-يطلع" فقط.
-- **افصله بعد كل جلسة** — لا تخليه شغّال 24/7. شغله لما تحتاج التسجيل فقط.
-- **لا تستخدم VPN/Proxy غير ثابت** — التغيير المتكرر للـ IP يرفع علم.
-- **انتظر دقايق قبل الانضمام** — لا تخلي السكربت ينضم فوراً للروم. أضف delay عشوائي.
-- **توقع الحظر** — جهز حسابين احتياطيين على الأقل. لو راحت روح، بدّل التوكن في .env واستمر.
+- **لا تستخدم الحساب لشي ثاني** — لا رسائل، لا تفاعلات، لا انضمام لسيرفرات أخرى.
+- **توقف بين الجلسات** — لا تخلّيه شغّال 24/7. شغّله لما تبي التسجيل.
+- **ثبات الـ IP** — لا تستخدم VPN متغيّر. ثبات IP يقلل علم الـ trust score.
+- **اسم وأفتار ثابتين** — تغيير متكرر للاسم/الأفتار = علم أحمر لديسكورد.
+- **توقع الحظر** — جهز حسابين احتياطيين. لو راحت روح، بدّل التوكن في `.env`.
+- **لا تربط رقم جوالك** بحساب الـ companion — لو تحظر، الرقم يتحرق ومايصير تستخدمه لحساب جديد.
 
 ## حذف وإلغاء
 
-```bash
-sudo systemctl disable --now faisal-companion
-rm -rf companion-profile out
+```powershell
+nssm remove FaisalCompanion confirm
+Remove-Item -Recurse -Force $HOME\faisal-discord-suite\companion\companion-profile
+Remove-Item -Recurse -Force $HOME\faisal-discord-suite\companion\out
 ```
 
 </div>

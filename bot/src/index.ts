@@ -5,6 +5,7 @@ import { db } from "./db/database.js";
 import { registerAllCommands } from "./commands/index.js";
 import { registerAllEvents } from "./events/index.js";
 import { initStayConnected } from "./modules/stayConnected/index.js";
+import { ensureCompanion } from "./modules/companion/client.js";
 
 async function main(): Promise<void> {
   logger.info("starting Faisal Discord Suite bot…");
@@ -14,6 +15,7 @@ async function main(): Promise<void> {
   await registerAllCommands(client);
   await registerAllEvents(client);
   initStayConnected(client);
+  ensureCompanion(); // best-effort connect to optional companion app
 
   client.once("ready", (c) => {
     logger.info(

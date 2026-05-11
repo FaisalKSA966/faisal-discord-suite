@@ -44,6 +44,18 @@ export const helpCommand: SlashCommand = {
               value:
                 "`/vip avatar change` / `/vip name change` / `/vip banner change`",
             },
+            {
+              name: "حساب الـ Companion (للمالك — يحتاج تطبيق Windows)",
+              value:
+                "`/account status` — حالة الـ companion\n" +
+                "`/account name` / `/account display-name` / `/account bio`\n" +
+                "`/account avatar` / `/account banner`\n" +
+                "`/account presence` — online/dnd/idle/invisible\n" +
+                "`/account custom-status` — نص + إيموجي\n" +
+                "`/voice join|leave|mute` — تحكم بالروم\n" +
+                "`/share start|stop|record-start|record-stop|status` — سكرين شير + تسجيل\n" +
+                "`/camera on|off` — كاميرا",
+            },
           ],
           footer: { text: "Faisal Suite" },
         }),

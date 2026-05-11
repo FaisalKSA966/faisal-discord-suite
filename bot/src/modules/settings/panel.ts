@@ -12,18 +12,42 @@ export async function renderSetupPanel(guild: Guild) {
 
   const embed = buildEmbed({
     title: `⚙️ إعدادات ${guild.name}`,
-    description: [
-      `**قناة لوحة التسجيل (ثريدات الفيديو):** ${rec}`,
-      `**روم التثبيت 24/7:** ${pin}`,
-      `**Region افتراضي:** \`${region}\``,
-      `**المدة الافتراضية للـ Clip:** ${s.default_duration_minutes} دقيقة`,
-      `**Buffer الكبير:** ${s.max_buffer_minutes} دقيقة`,
-      `**جودة التركيب:** ${s.render_quality}`,
-      `**Auto-Pin:** ${s.auto_pin ? "مفعّل ✅" : "مغلق"}`,
-      `**Auto-Region:** ${s.auto_region ? "مفعّل ✅" : "مغلق"}`,
-    ].join("\n"),
+    description:
+      "اضبط القنوات و الـ Region و الـ Buffer من القوائم والأزرار في الأسفل ↓\n" +
+      "كل تغيير يُحفظ تلقائياً.",
     color: Palette.accent,
-    footer: { text: "غيّر القيم باستخدام القوائم والأزرار تحت ↓" },
+    fields: [
+      {
+        name: "📺 القنوات",
+        value: [
+          `قناة لوحة التسجيل: ${rec}`,
+          `روم التثبيت 24/7: ${pin}`,
+        ].join("\n"),
+        inline: false,
+      },
+      {
+        name: "🌍 Region",
+        value: `الافتراضي: \`${region}\`\nAuto-Region: ${
+          s.auto_region ? "مفعّل ✅" : "مغلق ⚪"
+        }`,
+        inline: true,
+      },
+      {
+        name: "📌 التثبيت",
+        value: `Auto-Pin: ${s.auto_pin ? "مفعّل ✅" : "مغلق ⚪"}`,
+        inline: true,
+      },
+      {
+        name: "🎞️ الـ Clip / Buffer",
+        value: [
+          `Clip افتراضي: **${s.default_duration_minutes}** دقيقة`,
+          `Buffer كبير: **${s.max_buffer_minutes}** دقيقة`,
+          `جودة الرندر: **${s.render_quality}**`,
+        ].join("\n"),
+        inline: false,
+      },
+    ],
+    footer: { text: "Faisal Suite • Liquid Glass Edition" },
   });
 
   return {
